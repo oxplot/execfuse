@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"syscall"
+	"time"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
@@ -62,7 +63,10 @@ func (t *node) ReadAll(ctx context.Context) ([]byte, error) {
 	defer f.Close()
 
 	b := &bytes.Buffer{}
-	cmd := exec.Command("/bin/sh", "-c", *script)
+	to, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(to, "/bin/sh", "-c", *script)
+	cmd.WaitDelay = time.Second
 	cmd.Stdin = f
 	cmd.Stdout = b
 	if err := cmd.Run(); err != nil {
